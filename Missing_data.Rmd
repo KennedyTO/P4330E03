@@ -9,22 +9,62 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+A researcher is interested in predicting depression from trait anxiety and agreeableness. The dataset is called epi.bfi and resides within the psychTools package.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Depression was measured with the Beck Depression Inventory (bdi), trait anxiety was measured with the State-Trait Anxiety Inventory (traitanx), and agreeableness was measured with the Big 5 Inventory (bfagree). Use α = .05 for any null hypothesis testing.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r}
+#Load required libraries
+library(psychTools)
+library(missMethods)
 
-```{r cars}
-summary(cars)
+# Load and check the dataset
+d <- epi.bfi
+str(d)
+head(d)
+nrow(d) #This is to find out the number of rows (data pints) in the dataset
+
+# Run a regular model without removing the data
+m <- lm()
+
+
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```         
+Variable Descriptions
+epiE: EPI Extraversion
+epiS: EPI Sociability (a subset of Extraversion items
+epiImp: EPI Impulsivity (a subset of Extraversion items
+epilie: EPI Lie scale
+epiNeur: EPI neuroticism
+bfagree: Big 5 inventory (from the IPIP) measure of Agreeableness
+bfcon: Big 5 Conscientiousness
+bfext: Big 5 Extraversion
+bfneur: Big 5 Neuroticism
+bfopen: Big 5 Openness
+bdi: Beck Depression scale
+traitanx: Trait Anxiety
+stateanx: State Anxiety
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+#### 1) Use the delete_MCAR function from the missMethods package to randomly remove 15% of cases from each variable. Save this dataset with a new name.
+
+#### 2) Determine if the missing data can be classified as 'missing completely at random' (you should be able to predict the answer from Q1).
+
+#### 3) Run a general linear model predicting depression from trait anxiety and agreeableness using each of the following strategies:  
+
+##### a. Complete Data 
+
+##### b. Listwise Deletion 
+
+##### c. Regression Imputation 
+
+##### d. Stochastic Regression Imputation 
+
+##### e. Expectation-Maximization 
+
+##### f. Multiple Imputation
+
+#### 4) Explore the unstandardized regression coefficients resulting from each strategy in Q3. Are there any noticeable differences between strategies?
+
+#### 5) Explore the standard errors for the coefficients resulting from each strategy in Q3. Are there any noticeable differences between strategies? (We could/should have also looked at the p-values, standardized effect sizes, etc.)
