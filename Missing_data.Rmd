@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 ```
 
 A researcher is interested in predicting depression from trait anxiety and agreeableness. The dataset is called epi.bfi and resides within the psychTools package.
@@ -23,10 +23,6 @@ d <- epi.bfi
 str(d)
 head(d)
 nrow(d) #This is to find out the number of rows (data pints) in the dataset
-
-# Run a regular model without removing the data
-m <- lm()
-
 
 ```
 
@@ -47,24 +43,165 @@ traitanx: Trait Anxiety
 stateanx: State Anxiety
 ```
 
-#### 1) Use the delete_MCAR function from the missMethods package to randomly remove 15% of cases from each variable. Save this dataset with a new name.
+------------------------------------------------------------------------
 
-#### 2) Determine if the missing data can be classified as 'missing completely at random' (you should be able to predict the answer from Q1).
+### Full Model
 
-#### 3) Run a general linear model predicting depression from trait anxiety and agreeableness using each of the following strategies:  
+#### **Review Full model (without deletion) [a]. Use the delete_MCAR function from the missMethods package to randomly remove 15% of cases from each variable. Save this dataset with a new name [].**
 
-##### a. Complete Data 
+#### Review the FULL Model
 
-##### b. Listwise Deletion 
+```{r}
+# Run a full model without removing any data points for a comparison purposes.
 
-##### c. Regression Imputation 
+complete_m <- lm(bdi ~ traitanx + bfagree, data = d)
+summary(complete_m)
+confint(complete_m)
 
-##### d. Stochastic Regression Imputation 
+# Extract and save coefficients, SEs and p-values as "Values" for the comparison later (See b4).
+(coeffs<-summary(complete_m)$coefficients[,"Estimate"]) 
+(stderrs<-summary(complete_m)$coefficients[,"Std. Error"])
+(pvals<-summary(complete_m)$coefficients[,"Pr(>|t|)"])
+```
 
-##### e. Expectation-Maximization 
+------------------------------------------------------------------------
 
-##### f. Multiple Imputation
+### Deletion
 
-#### 4) Explore the unstandardized regression coefficients resulting from each strategy in Q3. Are there any noticeable differences between strategies?
+##### Conduct List-wise Deletion
 
-#### 5) Explore the standard errors for the coefficients resulting from each strategy in Q3. Are there any noticeable differences between strategies? (We could/should have also looked at the p-values, standardized effect sizes, etc.)
+```{r}
+library(missMethods)
+
+# Randomly remove 15% of data points and store it as likewise_15
+listwise_15 <- delete_MCAR(ds = d, p = .15)
+(colMeans(is.na(listwise_15)))*100 
+
+#The above is showing what proportion of the data is missing. 15.15152 means it is missing just over 15% of data.
+```
+
+#### Determine if the missing data can be classified as 'missing completely at random' (you should be able to predict the answer from Q1).
+
+```{r}
+library(naniar)
+mcar_test(listwise_15)
+```
+
+#### ***Conclusion: The non-significant p.value = 0.467 suggests that the missing data is likely missing completely at random.*** 
+
+------------------------------------------------------------------------
+
+### Run GLM
+
+#### 3) Run a general linear model predicting depression from trait anxiety and agreeableness using each of the following strategies:
+
+```{r}
+listwise_m <- lm(bdi ~ traitanx + bfagree, data = listwise_15)
+summary(listwise_m)
+confint(listwise_m)
+```
+
+**Note. The deletion of missingness for lm() is LISTWISE deletion as a default. They take out the data point entirely.**
+
+------------------------------------------------------------------------
+
+#### Compare Between Full Model and Listwise Deletion using rbind()
+
+```{r}
+# Compare the coefficients between Original model and Listwise Model
+(coeffs <- rbind(coeffs, coef(listwise_m))) # rbind(First item, Second item(model))
+
+# Compare the SDs between Original model and Listwise Model
+(SEs =  rbind(stderrs, summary(listwise_m)$coefficients[,"Std. Error"]))
+
+# Compare the p.values between the two models
+(pvals<-rbind(pvals,summary(listwise_m)$coefficients[,"Pr(>|t|)"]))
+```
+
+**Note. The Full model (First row) compared to the Listwise model (Second row)**
+
+------------------------------------------------------------------------
+
+### Imputations:
+
+##### Regression Imputation
+
+mice: "norm.predict" and m = 1 is Regression Imputation
+
+```{r}
+# Load mice package for Regressioni Imputation
+library(mice)
+
+# Impute Listwise data (listwise_m) with Regression imputation (use method = norm.predict)
+Listwise_m_Reg_Imputation <- mice(listwise_15, method = "norm.predict", m = 1) # m = 1 is how many times you want to run your imputation cycle. 
+
+# Save the "Listwise_m_Reg_Imputation" as the new dataset
+d_ListWiseRegImp <- complete(Listwise_m_Reg_Imputation)
+
+# Run an GLM using the d_ListWiseRegImp to see how the model fits the data (how the model best represents the relationship oberved in the data).
+m_Reg_Imp <- lm(bdi ~ traitanx + bfagree, data = d_ListWiseRegImp)
+summary(m_Reg_Imp)
+
+# Combine and compare the coefficients
+(coeffs <- rbind(coeffs, coef(m_Reg_Imp)))
+
+# Combine and compare the SEs
+(SEs = rbind(SEs, summary(m_Reg_Imp)$coefficients[,"Std. Error"]))
+
+# Combine and compare the p.values
+(pvals <- rbind(pvals, summary(m_Reg_Imp)$coefficients[,"Pr(>|t|)"]))
+```
+
+------------------------------------------------------------------------
+
+##### Stochastic Regression Imputation
+
+mice: "norm.nob" and m = 1 is Stochastic Regression Imputation
+
+```{r}
+# Conduct Stochastic Imputation and add results to 
+Listwise_m_Sto_Imputation <- mice(listwise_15, method = "norm.nob", m = 1)
+d_ListWiseStoImp <- complete(Listwise_m_Sto_Imputation)
+m_Sto_Imp <- lm(bdi ~ traitanx + bfagree, data = d_ListWiseStoImp)
+summary(m_Sto_Imp)
+confint(m_Sto_Imp)
+
+#rbind and compare with the rest of "Coeffs", "SEs", and "pvals"
+(coeffs <- rbind(coeffs, coef(m_Sto_Imp)))
+(SEs <- rbind(SEs, summary(m_Sto_Imp)$coefficients[,"Std. Error"]))
+(pvals <- rbind(pvals, summary(m_Sto_Imp)$coefficients[,"Pr(>|t|)"]))
+```
+
+##### Multiple Imputation
+
+```{r}
+Listwise_m_Mul_Imputation <- mice(listwise_15, method = "norm.nob", m = 10, printFlag=FALSE)
+d_ListWiseMulImp <- complete(Listwise_m_Mul_Imputation)
+m_Mul_Imp <- lm(bdi ~ traitanx + bfagree, data = d_ListWiseMulImp)
+summary(m_Mul_Imp)
+confint(m_Mul_Imp)
+
+#rbind and compare with the rest of "Coeffs", "SEs", and "pvals"
+(coeffs <- rbind(coeffs, coef(m_Mul_Imp)))
+(SEs <- rbind(SEs, summary(m_Mul_Imp)$coefficients[,"Std. Error"]))
+(pvals <- rbind(pvals, summary(m_Mul_Imp)$coefficients[,"Pr(>|t|)"]))
+```
+
+##### Expectation-Maximization
+
+```{r}
+library(missMethods)
+d_EM <- impute_EM(listwise_15)
+m_EM_Imp <- lm(bdi ~ traitanx + bfagree, data = d_EM)
+summary(m_EM_Imp)
+confint(m_EM_Imp)
+
+#rbind and compare coefficients, SEs and pvals
+(coeffs <- rbind(coeffs, coef(m_EM_Imp)))
+(SEs = rbind(SEs, summary(m_EM_Imp)$coefficients[,"Std. Error"]))
+(pvals <- rbind(pvals, summary(m_EM_Imp)$coefficients[,"Pr(>|t|)"]))
+```
+
+\
+
+#### 

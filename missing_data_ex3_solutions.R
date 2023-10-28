@@ -44,7 +44,7 @@ library(mice)
 # Regression Imputation
 # We are going to use all dataset variables for prediction
 # of potential imputation values
-m_imp1<- mice(d2, method="norm.predict", m=1)
+m_imp1<- mice(d2, method="norm.predict", m = 1)
 d3 <- complete(m_imp1)
 m3 <- lm(bdi ~ traitanx + bfagree, data = d3)
 summary(m3)

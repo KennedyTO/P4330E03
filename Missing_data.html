@@ -416,33 +416,330 @@ bfopen: Big 5 Openness
 bdi: Beck Depression scale
 traitanx: Trait Anxiety
 stateanx: State Anxiety</code></pre>
-<div id="use-the-delete_mcar-function-from-the-missmethods-package-to-randomly-remove-15-of-cases-from-each-variable.-save-this-dataset-with-a-new-name." class="section level4">
-<h4>1) Use the delete_MCAR function from the missMethods package to
-randomly remove 15% of cases from each variable. Save this dataset with
-a new name.</h4>
+<hr />
+<div id="full-model" class="section level3">
+<h3>Full Model</h3>
+<div id="review-full-model-without-deletion-a.-use-the-delete_mcar-function-from-the-missmethods-package-to-randomly-remove-15-of-cases-from-each-variable.-save-this-dataset-with-a-new-name-." class="section level4">
+<h4><strong>Review Full model (without deletion) [a]. Use the
+delete_MCAR function from the missMethods package to randomly remove 15%
+of cases from each variable. Save this dataset with a new name
+[].</strong></h4>
+</div>
+<div id="review-the-full-model" class="section level4">
+<h4>Review the FULL Model</h4>
+<pre class="r"><code># Run a full model without removing any data points for a comparison purposes.
+
+complete_m &lt;- lm(bdi ~ traitanx + bfagree, data = d)
+summary(complete_m)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = bdi ~ traitanx + bfagree, data = d)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -11.1938  -2.4100  -0.6435   1.9371  14.1215 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -11.74893    2.74664  -4.278 2.78e-05 ***
+## traitanx      0.40912    0.03178  12.873  &lt; 2e-16 ***
+## bfagree       0.02055    0.01668   1.232    0.219    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 4.37 on 228 degrees of freedom
+## Multiple R-squared:  0.4325, Adjusted R-squared:  0.4275 
+## F-statistic: 86.88 on 2 and 228 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>confint(complete_m)</code></pre>
+<pre><code>##                    2.5 %      97.5 %
+## (Intercept) -17.16097075 -6.33689786
+## traitanx      0.34649611  0.47173740
+## bfagree      -0.01230885  0.05341523</code></pre>
+<pre class="r"><code># Extract and save coefficients, SEs and p-values as &quot;Values&quot; for the comparison later (See b4).
+(coeffs&lt;-summary(complete_m)$coefficients[,&quot;Estimate&quot;]) </code></pre>
+<pre><code>##  (Intercept)     traitanx      bfagree 
+## -11.74893430   0.40911675   0.02055319</code></pre>
+<pre class="r"><code>(stderrs&lt;-summary(complete_m)$coefficients[,&quot;Std. Error&quot;])</code></pre>
+<pre><code>## (Intercept)    traitanx     bfagree 
+##  2.74663659  0.03178030  0.01667766</code></pre>
+<pre class="r"><code>(pvals&lt;-summary(complete_m)$coefficients[,&quot;Pr(&gt;|t|)&quot;])</code></pre>
+<pre><code>##  (Intercept)     traitanx      bfagree 
+## 2.780677e-05 7.258910e-29 2.190770e-01</code></pre>
+<hr />
+</div>
+</div>
+<div id="deletion" class="section level3">
+<h3>Deletion</h3>
+<div id="conduct-list-wise-deletion" class="section level5">
+<h5>Conduct List-wise Deletion</h5>
+<pre class="r"><code>library(missMethods)
+
+# Randomly remove 15% of data points and store it as likewise_15
+listwise_15 &lt;- delete_MCAR(ds = d, p = .15)
+(colMeans(is.na(listwise_15)))*100 </code></pre>
+<pre><code>##     epiE     epiS   epiImp   epilie  epiNeur  bfagree    bfcon    bfext 
+## 15.15152 15.15152 15.15152 15.15152 15.15152 15.15152 15.15152 15.15152 
+##   bfneur   bfopen      bdi traitanx stateanx 
+## 15.15152 15.15152 15.15152 15.15152 15.15152</code></pre>
+<pre class="r"><code>#The above is showing what proportion of the data is missing. 15.15152 means it is missing just over 15% of data.</code></pre>
 </div>
 <div id="determine-if-the-missing-data-can-be-classified-as-missing-completely-at-random-you-should-be-able-to-predict-the-answer-from-q1." class="section level4">
-<h4>2) Determine if the missing data can be classified as ‘missing
+<h4>Determine if the missing data can be classified as ‘missing
 completely at random’ (you should be able to predict the answer from
 Q1).</h4>
+<pre class="r"><code>library(naniar)
+mcar_test(listwise_15)</code></pre>
+<pre><code>## # A tibble: 1 × 4
+##   statistic    df p.value missing.patterns
+##       &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;            &lt;int&gt;
+## 1     1324.  1288   0.237              126</code></pre>
 </div>
-<div id="run-a-general-linear-model-predicting-depression-from-trait-anxiety-and-agreeableness-using-each-of-the-following-strategies-a.-complete-data-b.-listwise-deletion-c.-regression-imputation-d.-stochastic-regression-imputation-e.-expectation-maximization-f.-multiple-imputation" class="section level4">
+<div id="conclusion-the-non-significant-p.value-0.467-suggests-that-the-missing-data-is-likely-missing-completely-at-random." class="section level4">
+<h4><strong><em>Conclusion: The non-significant p.value = 0.467 suggests
+that the missing data is likely missing completely at
+random.</em></strong></h4>
+<hr />
+</div>
+</div>
+<div id="run-glm" class="section level3">
+<h3>Run GLM</h3>
+<div id="run-a-general-linear-model-predicting-depression-from-trait-anxiety-and-agreeableness-using-each-of-the-following-strategies" class="section level4">
 <h4>3) Run a general linear model predicting depression from trait
-anxiety and agreeableness using each of the following strategies: a.
-Complete Data b. Listwise Deletion c. Regression Imputation
-d. Stochastic Regression Imputation e. Expectation-Maximization
-f. Multiple Imputation</h4>
+anxiety and agreeableness using each of the following strategies:</h4>
+<pre class="r"><code>listwise_m &lt;- lm(bdi ~ traitanx + bfagree, data = listwise_15)
+summary(listwise_m)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = bdi ~ traitanx + bfagree, data = listwise_15)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -11.1524  -2.3395  -0.4402   1.6614  13.7052 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -15.77065    3.41554  -4.617 8.58e-06 ***
+## traitanx      0.43629    0.03650  11.953  &lt; 2e-16 ***
+## bfagree       0.04222    0.02076   2.034   0.0438 *  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 4.128 on 143 degrees of freedom
+##   (85 observations deleted due to missingness)
+## Multiple R-squared:  0.5107, Adjusted R-squared:  0.5038 
+## F-statistic: 74.62 on 2 and 143 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>confint(listwise_m)</code></pre>
+<pre><code>##                     2.5 %      97.5 %
+## (Intercept) -22.522118938 -9.01918610
+## traitanx      0.364142368  0.50844697
+## bfagree       0.001188963  0.08324646</code></pre>
+<p><strong>Note. The deletion of missingness for lm() is LISTWISE
+deletion as a default. They take out the data point
+entirely.</strong></p>
+<hr />
 </div>
-<div id="explore-the-unstandardized-regression-coefficients-resulting-from-each-strategy-in-q3.-are-there-any-noticeable-differences-between-strategies" class="section level4">
-<h4>4) Explore the unstandardized regression coefficients resulting from
-each strategy in Q3. Are there any noticeable differences between
-strategies?</h4>
+<div id="compare-between-full-model-and-listwise-deletion-using-rbind" class="section level4">
+<h4>Compare Between Full Model and Listwise Deletion using rbind()</h4>
+<pre class="r"><code># Compare the coefficients between Original model and Listwise Model
+(coeffs &lt;- rbind(coeffs, coef(listwise_m))) # rbind(First item, Second item(model))</code></pre>
+<pre><code>##        (Intercept)  traitanx    bfagree
+## coeffs   -11.74893 0.4091168 0.02055319
+##          -15.77065 0.4362947 0.04221771</code></pre>
+<pre class="r"><code># Compare the SDs between Original model and Listwise Model
+(SEs =  rbind(stderrs, summary(listwise_m)$coefficients[,&quot;Std. Error&quot;]))</code></pre>
+<pre><code>##         (Intercept)   traitanx    bfagree
+## stderrs    2.746637 0.03178030 0.01667766
+##            3.415538 0.03650154 0.02075627</code></pre>
+<pre class="r"><code># Compare the p.values between the two models
+(pvals&lt;-rbind(pvals,summary(listwise_m)$coefficients[,&quot;Pr(&gt;|t|)&quot;]))</code></pre>
+<pre><code>##        (Intercept)     traitanx    bfagree
+## pvals 2.780677e-05 7.258910e-29 0.21907696
+##       8.580046e-06 2.895858e-23 0.04380306</code></pre>
+<p><strong>Note. The Full model (First row) compared to the Listwise
+model (Second row)</strong></p>
+<hr />
 </div>
-<div id="explore-the-standard-errors-for-the-coefficients-resulting-from-each-strategy-in-q3.-are-there-any-noticeable-differences-between-strategies-we-couldshould-have-also-looked-at-the-p-values-standardized-effect-sizes-etc." class="section level4">
-<h4>5) Explore the standard errors for the coefficients resulting from
-each strategy in Q3. Are there any noticeable differences between
-strategies? (We could/should have also looked at the p-values,
-standardized effect sizes, etc.)</h4>
+</div>
+<div id="imputations" class="section level3">
+<h3>Imputations:</h3>
+<div id="regression-imputation" class="section level5">
+<h5>Regression Imputation</h5>
+<p>mice: “norm.predict” and m = 1 is Regression Imputation</p>
+<pre class="r"><code># Load mice package for Regressioni Imputation
+library(mice)
+
+# Impute Listwise data (listwise_m) with Regression imputation (use method = norm.predict)
+Listwise_m_Reg_Imputation &lt;- mice(listwise_15, method = &quot;norm.predict&quot;, m = 1) # m = 1 is how many times you want to run your imputation cycle. </code></pre>
+<pre><code>## 
+##  iter imp variable
+##   1   1  epiE  epiS  epiImp  epilie  epiNeur  bfagree  bfcon  bfext  bfneur  bfopen  bdi  traitanx  stateanx
+##   2   1  epiE  epiS  epiImp  epilie  epiNeur  bfagree  bfcon  bfext  bfneur  bfopen  bdi  traitanx  stateanx
+##   3   1  epiE  epiS  epiImp  epilie  epiNeur  bfagree  bfcon  bfext  bfneur  bfopen  bdi  traitanx  stateanx
+##   4   1  epiE  epiS  epiImp  epilie  epiNeur  bfagree  bfcon  bfext  bfneur  bfopen  bdi  traitanx  stateanx
+##   5   1  epiE  epiS  epiImp  epilie  epiNeur  bfagree  bfcon  bfext  bfneur  bfopen  bdi  traitanx  stateanx</code></pre>
+<pre class="r"><code># Save the &quot;Listwise_m_Reg_Imputation&quot; as the new dataset
+d_ListWiseRegImp &lt;- complete(Listwise_m_Reg_Imputation)
+
+# Run an GLM using the d_ListWiseRegImp to see how the model fits the data (how the model best represents the relationship oberved in the data).
+m_Reg_Imp &lt;- lm(bdi ~ traitanx + bfagree, data = d_ListWiseRegImp)
+summary(m_Reg_Imp)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = bdi ~ traitanx + bfagree, data = d_ListWiseRegImp)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -11.2369  -2.1420  -0.5407   1.5062  14.6067 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -13.84232    2.64387  -5.236 3.73e-07 ***
+## traitanx      0.43234    0.02902  14.898  &lt; 2e-16 ***
+## bfagree       0.02861    0.01586   1.804   0.0726 .  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 3.893 on 228 degrees of freedom
+## Multiple R-squared:  0.5105, Adjusted R-squared:  0.5062 
+## F-statistic: 118.9 on 2 and 228 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code># Combine and compare the coefficients
+(coeffs &lt;- rbind(coeffs, coef(m_Reg_Imp)))</code></pre>
+<pre><code>##        (Intercept)  traitanx    bfagree
+## coeffs   -11.74893 0.4091168 0.02055319
+##          -15.77065 0.4362947 0.04221771
+##          -13.84232 0.4323394 0.02861395</code></pre>
+<pre class="r"><code># Combine and compare the SEs
+(SEs = rbind(SEs, summary(m_Reg_Imp)$coefficients[,&quot;Std. Error&quot;]))</code></pre>
+<pre><code>##         (Intercept)   traitanx    bfagree
+## stderrs    2.746637 0.03178030 0.01667766
+##            3.415538 0.03650154 0.02075627
+##            2.643868 0.02901951 0.01586371</code></pre>
+<pre class="r"><code># Combine and compare the p.values
+(pvals &lt;- rbind(pvals, summary(m_Reg_Imp)$coefficients[,&quot;Pr(&gt;|t|)&quot;]))</code></pre>
+<pre><code>##        (Intercept)     traitanx    bfagree
+## pvals 2.780677e-05 7.258910e-29 0.21907696
+##       8.580046e-06 2.895858e-23 0.04380306
+##       3.730291e-07 1.648427e-35 0.07259253</code></pre>
+<hr />
+</div>
+<div id="stochastic-regression-imputation" class="section level5">
+<h5>Stochastic Regression Imputation</h5>
+<p>mice: “norm.nob” and m = 1 is Stochastic Regression Imputation</p>
+<pre class="r"><code># Conduct Stochastic Imputation and add results to 
+Listwise_m_Sto_Imputation &lt;- mice(listwise_15, method = &quot;norm.nob&quot;, m = 1)</code></pre>
+<pre><code>## 
+##  iter imp variable
+##   1   1  epiE  epiS  epiImp  epilie  epiNeur  bfagree  bfcon  bfext  bfneur  bfopen  bdi  traitanx  stateanx
+##   2   1  epiE  epiS  epiImp  epilie  epiNeur  bfagree  bfcon  bfext  bfneur  bfopen  bdi  traitanx  stateanx
+##   3   1  epiE  epiS  epiImp  epilie  epiNeur  bfagree  bfcon  bfext  bfneur  bfopen  bdi  traitanx  stateanx
+##   4   1  epiE  epiS  epiImp  epilie  epiNeur  bfagree  bfcon  bfext  bfneur  bfopen  bdi  traitanx  stateanx
+##   5   1  epiE  epiS  epiImp  epilie  epiNeur  bfagree  bfcon  bfext  bfneur  bfopen  bdi  traitanx  stateanx</code></pre>
+<pre class="r"><code>d_ListWiseStoImp &lt;- complete(Listwise_m_Sto_Imputation)
+m_Sto_Imp &lt;- lm(bdi ~ traitanx + bfagree, data = d_ListWiseStoImp)
+summary(m_Sto_Imp)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = bdi ~ traitanx + bfagree, data = d_ListWiseStoImp)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -11.7805  -2.7059  -0.7072   1.8061  15.2796 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -10.97912    2.83423  -3.874  0.00014 ***
+## traitanx      0.39325    0.03127  12.575  &lt; 2e-16 ***
+## bfagree       0.01793    0.01692   1.059  0.29063    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 4.3 on 228 degrees of freedom
+## Multiple R-squared:  0.4304, Adjusted R-squared:  0.4254 
+## F-statistic: 86.14 on 2 and 228 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>confint(m_Sto_Imp)</code></pre>
+<pre><code>##                   2.5 %      97.5 %
+## (Intercept) -16.5637612 -5.39448477
+## traitanx      0.3316345  0.45487508
+## bfagree      -0.0154216  0.05127323</code></pre>
+<pre class="r"><code>#rbind and compare with the rest of &quot;Coeffs&quot;, &quot;SEs&quot;, and &quot;pvals&quot;
+(coeffs &lt;- rbind(coeffs, coef(m_Sto_Imp)))</code></pre>
+<pre><code>##        (Intercept)  traitanx    bfagree
+## coeffs   -11.74893 0.4091168 0.02055319
+##          -15.77065 0.4362947 0.04221771
+##          -13.84232 0.4323394 0.02861395
+##          -10.97912 0.3932548 0.01792581</code></pre>
+<pre class="r"><code>(SEs &lt;- rbind(SEs, summary(m_Sto_Imp)$coefficients[,&quot;Std. Error&quot;]))</code></pre>
+<pre><code>##         (Intercept)   traitanx    bfagree
+## stderrs    2.746637 0.03178030 0.01667766
+##            3.415538 0.03650154 0.02075627
+##            2.643868 0.02901951 0.01586371
+##            2.834233 0.03127262 0.01692399</code></pre>
+<pre class="r"><code>(pvals &lt;- rbind(pvals, summary(m_Sto_Imp)$coefficients[,&quot;Pr(&gt;|t|)&quot;]))</code></pre>
+<pre><code>##        (Intercept)     traitanx    bfagree
+## pvals 2.780677e-05 7.258910e-29 0.21907696
+##       8.580046e-06 2.895858e-23 0.04380306
+##       3.730291e-07 1.648427e-35 0.07259253
+##       1.400743e-04 6.766710e-28 0.29063152</code></pre>
+</div>
+<div id="multiple-imputation" class="section level5">
+<h5>Multiple Imputation</h5>
+<pre class="r"><code>Listwise_m_Mul_Imputation &lt;- mice(listwise_15, method = &quot;norm.nob&quot;, m = 10, printFlag=FALSE)
+d_ListWiseMulImp &lt;- complete(Listwise_m_Mul_Imputation)
+m_Mul_Imp &lt;- lm(bdi ~ traitanx + bfagree, data = d_ListWiseMulImp)
+summary(m_Mul_Imp)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = bdi ~ traitanx + bfagree, data = d_ListWiseMulImp)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -11.1320  -2.7672  -0.4858   1.9444  14.3891 
+## 
+## Coefficients:
+##               Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) -10.354202   2.587764  -4.001 8.52e-05 ***
+## traitanx      0.407699   0.029883  13.643  &lt; 2e-16 ***
+## bfagree       0.009101   0.015830   0.575    0.566    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 4.212 on 228 degrees of freedom
+## Multiple R-squared:  0.4659, Adjusted R-squared:  0.4612 
+## F-statistic: 99.44 on 2 and 228 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>confint(m_Mul_Imp)</code></pre>
+<pre><code>##                    2.5 %      97.5 %
+## (Intercept) -15.45319126 -5.25521267
+## traitanx      0.34881696  0.46658012
+## bfagree      -0.02209154  0.04029372</code></pre>
+<pre class="r"><code>#rbind and compare with the rest of &quot;Coeffs&quot;, &quot;SEs&quot;, and &quot;pvals&quot;
+(coeffs &lt;- rbind(coeffs, coef(m_Mul_Imp)))</code></pre>
+<pre><code>##        (Intercept)  traitanx     bfagree
+## coeffs   -11.74893 0.4091168 0.020553189
+##          -15.77065 0.4362947 0.042217712
+##          -13.84232 0.4323394 0.028613950
+##          -10.97912 0.3932548 0.017925813
+##          -10.35420 0.4076985 0.009101089</code></pre>
+<pre class="r"><code>(SEs &lt;- rbind(SEs, summary(m_Mul_Imp)$coefficients[,&quot;Std. Error&quot;]))</code></pre>
+<pre><code>##         (Intercept)   traitanx    bfagree
+## stderrs    2.746637 0.03178030 0.01667766
+##            3.415538 0.03650154 0.02075627
+##            2.643868 0.02901951 0.01586371
+##            2.834233 0.03127262 0.01692399
+##            2.587764 0.02988271 0.01583042</code></pre>
+<pre class="r"><code>(pvals &lt;- rbind(pvals, summary(m_Mul_Imp)$coefficients[,&quot;Pr(&gt;|t|)&quot;]))</code></pre>
+<pre><code>##        (Intercept)     traitanx    bfagree
+## pvals 2.780677e-05 7.258910e-29 0.21907696
+##       8.580046e-06 2.895858e-23 0.04380306
+##       3.730291e-07 1.648427e-35 0.07259253
+##       1.400743e-04 6.766710e-28 0.29063152
+##       8.521397e-05 2.206620e-31 0.56591816</code></pre>
+</div>
+<div id="expectation-maximization" class="section level5">
+<h5>Expectation-Maximization</h5>
+</div>
+<div id="section" class="section level4">
+<h4></h4>
+</div>
 </div>
 
 
